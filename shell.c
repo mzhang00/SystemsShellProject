@@ -9,8 +9,33 @@
 #include <sys/wait.h>
 #include <dirent.h>
 
+char ** parse_args( char * line ){
+  char ** args = malloc(sizeof(char*) * 10);
+  char * current = line;
+  int i = 0;
+  while (current != NULL) {
+    args[i] = strsep(&current, " ");
+    i++;
+  }
+  args[i] = NULL;
+  return args;
+}
+
+char ** parse_many( char * line ){
+  char ** args = malloc(sizeof(char*) * 10);
+  char * current = line;
+  int i = 0;
+  while (current != NULL) {
+    args[i] = strsep(&current, ";");
+    i++;
+  }
+  args[i] = NULL;
+  return args;
+}
+
 int main(int argc, char * argv[]){
-  while (1){
+  int running = 1;
+  while (running){
     char name[500];
     if (argc > 1) {
         strcpy(name, argv[1]);
@@ -23,20 +48,38 @@ int main(int argc, char * argv[]){
         name[i] = '\0';
     }
 
-    // printf("%s\n", name);
+    //printf("%p\n", strstr(name,";"));
 
+    if(strstr(name, ";") != NULL) {
+      char ** commands = parse_many(name);
+      while (commands != NULL){
+        //doesn't work for now!
+        // char ** args = parse_args(commands);
+        // printf("%s\n", args);
+        // commands++;
+      }
+    }else{
 
-    if (fork() == 0){
-      char * test[100] = {name, NULL};
-      execvp(test[0], test);
+      char ** args = parse_args(name);
+
+      //make it work for ' exit'
+      //https://stackoverflow.com/questions/1488372/mimic-pythons-strip-function-in-c
+      if (strcmp(args[0], "exit") == 0){
+        running = 0;
+      }
+
+      //make it work for 'cd' with no secondary args
+      if (strcmp(args[0],"cd") == 0) {
+          chdir(args[1]);
+      }
+      else if (fork() == 0){
+        execvp(args[0], args);
+      }
+
+      // int status;
+      // wait(&status);
+      // exit(0);
     }
-
-
-    // int status;
-    // wait(&status);
-    // exit(0);
   }
-  // char * test[100] = {"ls",NULL};
-  // execvp(test[0], test);
   return 0;
 }
